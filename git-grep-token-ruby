@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+
+require "ripper"
+require "shellwords"
+
+word, opts = *ARGV
+context = :nil
+lines = []
+
+cmd = "git grep --name-only #{Shellwords.escape(word)} #{[opts].flatten.compact.map{|a| Shellwords.escape(a)}.join(" ")}"
+
+`#{cmd}`.each_line do |file|
+  file.strip!
+  f = File.open(file)
+  Ripper.lex(f).each do |(posline, poscol), type, token|
+    if type == :on_kw
+      case token
+      when "def"
+        lines << [poscol]
+        context = :define_start
+      when "end"
+        if context == :define_end && poscol == lines.last.first
+          lines.last << posline
+          (_, file, token, start, finish) = lines.pop
+          puts "#{file}:#{start}"
+          system(%Q!cat -n #{file} | sed -n #{start},#{finish}p | sed -e "1s/#{token}/\\x1b[01;31m\\0\\x1b[0m/" !)
+          context = :blank
+        end
+      end
+    end
+
+    if context == :define_start
+      if type == :on_ident
+        if token == word
+          lines.last.concat [file, token, posline]
+          context = :define_end
+        else
+          context = :blank
+        end
+      end
+    end
+  end
+end

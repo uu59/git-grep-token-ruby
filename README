@@ -1,0 +1,27 @@
+Inspired by http://hitode909.hatenablog.com/entry/2013/09/13/141403
+
+Sample output:
+
+```console
+$ cd ~/src/jekyll
+$ git grep-token-ruby deep_merge
+lib/jekyll/core_ext.rb:8
+     8    def deep_merge(hash)
+     9      target = dup
+    10
+    11      hash.keys.each do |key|
+    12        if hash[key].is_a? Hash and self[key].is_a? Hash
+    13          target[key] = target[key].deep_merge(hash[key])
+    14          next
+    15        end
+    16
+    17        target[key] = hash[key]
+    18      end
+    19
+    20      target
+    21    end
+```
+
+NOTE:
+
+* works only indent level is sane
